@@ -10,5 +10,5 @@ def tensorflow(data):
     model.fit(data,epochs=1,callbacks=[WandbLogs()])  
 
 if __name__ == "__main__":
-    data = np.load("noel.npy")
+    data = np.load("/kaggle/input/noel.npy")
     tensorflow(data)
