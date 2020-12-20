@@ -1,14 +1,15 @@
-import torch
-import tensorflow as tf
 import numpy as np
-from tf_gan import GAN,WandbLogs
-import matplotlib.pyplot as plt
-def tensorflow(data):
-    data = tf.data.Dataset.from_tensor_slices(data)
-    data = data.shuffle(1024,reshuffle_each_iteration=True).batch(32,drop_remainder=True)
-    model = GAN()
-    model.fit(data,epochs=100,callbacks=[WandbLogs()])  
+from tf_gan import train as tf_train
+import argparse
 
 if __name__ == "__main__":
-    data = np.load("/kaggle/input/noel-dataset/noel.npy")
-    tensorflow(data)
+    parser = argparse.ArgumentParser(description="Train options")
+    parser.add_argument('--path',type=str, default = "noel.npy",help='Path to data')
+    parser.add_argument('--framework',type=str, default='tf',help="Frawork to use (tf, torch...)")
+    args = parser.parse_args()
+
+    data = np.load(args.path)
+    if args.framework == 'tf':
+        tf_train(data)
+    
+    
