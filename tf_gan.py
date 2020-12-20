@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 
-def train(data):
+def train(data,epochs):
     data = tf.data.Dataset.from_tensor_slices(data)
     data = data.shuffle(1024,reshuffle_each_iteration=True).batch(32,drop_remainder=True).repeat()
     model = GAN()

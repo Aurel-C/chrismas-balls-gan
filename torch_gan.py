@@ -6,7 +6,7 @@ from torchvision import transforms
 import numpy as np
 import wandb
 
-def train(data):
+def train(data,epochs):
     data = np.transpose(data,[0,3,1,2]).astype(np.float32)
     dataloader = torch.utils.data.DataLoader(data,batch_size=32,shuffle=True,drop_last=True)
     n_batches = len(dataloader)
@@ -28,7 +28,7 @@ def train(data):
         "d_loss":0,
     }
 
-    for epoch in trange(1000):
+    for epoch in trange(epochs):
         for data in dataloader:
             data = preprocess(data.to(device))
             g_labels = torch.ones(data.size(0),device=device)
