@@ -8,9 +8,9 @@ import wandb
 
 def train(data,epochs):
     data = np.transpose(data,[0,3,1,2]).astype(np.float32)
-    dataloader = torch.utils.data.DataLoader(data,batch_size=32,shuffle=True,drop_last=True)
+    dataloader = torch.utils.data.DataLoader(data,batch_size=32,shuffle=True,drop_last=True,pin_memory=True)
     n_batches = len(dataloader)
-    device = torch.device("cuda:0")
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     preprocess = transforms.Compose([
         transforms.RandomCrop(64),
         transforms.RandomHorizontalFlip(),
