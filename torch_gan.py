@@ -5,6 +5,7 @@ from tqdm import trange
 from torchvision import transforms
 import numpy as np
 import wandb
+import gc
 
 def train(data,epochs):
     data = np.transpose(data,[0,3,1,2]).astype(np.float32)
@@ -28,7 +29,7 @@ def train(data,epochs):
         "d_loss":0,
     }
 
-    for epoch in trange(epochs):
+    for epoch in trange(epochs+1):
         for data in dataloader:
             data = preprocess(data.to(device))
             g_labels = torch.ones(data.size(0),device=device)
@@ -68,8 +69,9 @@ def train(data,epochs):
         loss_dict["g_loss"] = 0
         loss_dict["d_loss"] = 0
 
-        # if epoch % 10 == 0:
-        #     wandb.log({"generated":[wandb.Image(generated[i]) for i in range(generated.size(0))]})
+        if epoch % 300 == 0:
+            wandb.log({"generated":[wandb.Image(generated[i]) for i in range(generated.size(0))]})
+            gc.collect()
 
 class Generator(nn.Module):
     def __init__(self):
