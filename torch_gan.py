@@ -68,8 +68,8 @@ def train(data,epochs):
         loss_dict["g_loss"] = 0
         loss_dict["d_loss"] = 0
 
-        if epoch % 10 == 0:
-            wandb.log({"generated":[wandb.Image(generated[i]) for i in range(generated.size(0))]})
+        # if epoch % 10 == 0:
+        #     wandb.log({"generated":[wandb.Image(generated[i]) for i in range(generated.size(0))]})
 
 class Generator(nn.Module):
     def __init__(self):
