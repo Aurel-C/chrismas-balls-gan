@@ -1,11 +1,10 @@
+import gc
 import torch
 from torch import nn,optim
-import torchvision
 from tqdm import trange
 from torchvision import transforms
 import numpy as np
 import wandb
-import gc
 
 def train(data,epochs):
     data = np.transpose(data,[0,3,1,2]).astype(np.float32)
@@ -13,8 +12,8 @@ def train(data,epochs):
     n_batches = len(dataloader)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     preprocess = transforms.Compose([
+        transforms.RandomRotation(45),
         transforms.RandomCrop(64),
-        transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
         transforms.Normalize([193,172,167],[71.1,86.3,88.3]),
     ])
@@ -39,7 +38,6 @@ def train(data,epochs):
             inputs = torch.randn(data.size(0),100,1,1,device=device)
             generated = netG(inputs)
 
-
             optimizerD.zero_grad()
 
             fake_pred = netD(generated.detach()).view(-1)
@@ -52,20 +50,18 @@ def train(data,epochs):
 
             optimizerD.step()
 
-
             optimizerG.zero_grad()
             pred = netD(generated).view(-1)
             g_loss = loss(pred,g_labels)
             g_loss.backward()
             optimizerG.step()
 
-
             loss_dict["g_loss"]+= g_loss.mean()
             loss_dict["d_loss"]+= (fake_loss + true_loss).mean()
 
         loss_dict["g_loss"]/= n_batches
         loss_dict["d_loss"]/= n_batches
-        wandb.log(loss_dict) 
+        wandb.log(loss_dict)
         loss_dict["g_loss"] = 0
         loss_dict["d_loss"] = 0
 
@@ -73,34 +69,38 @@ def train(data,epochs):
             wandb.log({"generated":[wandb.Image(generated[i]) for i in range(generated.size(0))]})
             gc.collect()
 
+
 class Generator(nn.Module):
     def __init__(self):
         super(Generator, self).__init__()
-        self.main = nn.Sequential(
-            # input is Z, going into a convolution
-            nn.ConvTranspose2d( 100, 64 * 8, 4, 1, 0, bias=False),
-            nn.BatchNorm2d(64 * 8),
-            nn.ReLU(True),
-            # state size. (64*8) x 4 x 4
-            nn.ConvTranspose2d(64 * 8, 64 * 4, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(64 * 4),
-            nn.ReLU(True),
-            # state size. (64*4) x 8 x 8
-            nn.ConvTranspose2d( 64 * 4, 64 * 2, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(64 * 2),
-            nn.ReLU(True),
-            # state size. (64*2) x 16 x 16
-            nn.ConvTranspose2d( 64 * 2, 64, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(64),
-            nn.ReLU(True),
-            # state size. (64) x 32 x 32
-            nn.ConvTranspose2d( 64, 3, 4, 2, 1, bias=False),
-            # state size. (3) x 64 x 64
-        )
+        self.linear = nn.Linear(100,64*8*4*4,bias=False)
+        self.bn = nn.BatchNorm2d(64 * 8)
+        self.relu = nn.ReLU(True)
+        self.up_blocks = [UpBlock(64 * 2**i,64 * 2**(i-1)) for i in range(3,0,-1)]
+        self.up = nn.UpsamplingNearest2d(scale_factor=2)
+        self.last_conv = nn.Conv2d(64,3,3,padding=1,bias=False)
 
     def forward(self, input):
-        return self.main(input)
+        x = self.linear(input).view(-1,512,4,4)
+        x = self.bn(x)
+        x = self.relu(x)
+        for i in range(3):
+            print(x.size())
+            x = self.up_blocks[i](x)
+        x = self.up(x)
+        return self.last_conv(x)
 
+class UpBlock(nn.Module):
+    def __init__(self,in_channels: int, out_channels: int, kernel_size= 3,padding=1,bias=False):
+        super().__init__()
+        self.block = nn.Sequential(
+            nn.UpsamplingNearest2d(scale_factor=2),
+            nn.Conv2d(in_channels, out_channels, kernel_size,padding=padding,bias=bias),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(True),
+        )
+    def forward(self,input):
+        return self.block(input)
 
 class Discriminator(nn.Module):
     def __init__(self):
@@ -127,3 +127,7 @@ class Discriminator(nn.Module):
 
     def forward(self, input):
         return self.main(input)
+
+if __name__ == "__main__":
+    inp = torch.zeros(2,100)
+    print(Generator().forward(inp).size())

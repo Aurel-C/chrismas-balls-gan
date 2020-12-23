@@ -1,5 +1,6 @@
 import numpy as np
 import argparse
+import wandb
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train options")
@@ -15,4 +16,5 @@ if __name__ == "__main__":
     if args.framework == 'torch':
         from torch_gan import train
     
+    wandb.login(key="01aa83e8465cdcf76446b03a37a6bd2133d07c33")
     train(data,args.epoch)
