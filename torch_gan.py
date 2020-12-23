@@ -35,7 +35,7 @@ def train(data,epochs):
             fake_labels = torch.zeros(data.size(0),device=device)
             true_labels = torch.ones(data.size(0),device=device)
 
-            inputs = torch.randn(data.size(0),100,1,1,device=device)
+            inputs = torch.randn(data.size(0),100,device=device)
             generated = netG(inputs)
 
             optimizerD.zero_grad()
@@ -85,7 +85,6 @@ class Generator(nn.Module):
         x = self.bn(x)
         x = self.relu(x)
         for i in range(3):
-            print(x.size())
             x = self.up_blocks[i](x)
         x = self.up(x)
         return self.last_conv(x)
