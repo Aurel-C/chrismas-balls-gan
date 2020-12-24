@@ -70,7 +70,7 @@ def train(data,epochs):
 
         if epoch % 300 == 0:
             with torch.no_grad():
-                generated = netG(fixed_input)
+                generated = (netG(fixed_input)*127.5 + 127.5).type(torch.uint8)
             wandb.log({"images/generated":[wandb.Image(generated[i]) for i in range(generated.size(0))]})
             gc.collect()
 
