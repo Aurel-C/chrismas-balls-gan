@@ -17,14 +17,14 @@ def train(data,epochs):
         transforms.RandomRotation(45),
         transforms.RandomCrop(64),
         transforms.RandomVerticalFlip(),
-        transforms.Normalize([193,172,167],[71.1,86.3,88.3]),
+        transforms.Normalize([127.5,127.5,127.5],[127.5,127.5,127.5]),
     ])
     netG = Generator().to(device)
     netD = Discriminator().to(device)
     loss = nn.BCEWithLogitsLoss()
     optimizerD = optim.Adam(netD.parameters(), lr= 0.0002, betas=(0.5, 0.999))
     optimizerG = optim.Adam(netG.parameters(), lr= 0.0002, betas=(0.5, 0.999))
-    wandb.init()
+    wandb.init(project="Gan",tags=["torch"],entity="azeru")
     loss_dict = {
         "g_loss":0,
         "d_loss":0,
@@ -84,6 +84,7 @@ class Generator(nn.Module):
         self.up_blocks = [UpBlock(64 * 2**i,64 * 2**(i-1)).to(device) for i in range(3,0,-1)]
         self.up = nn.UpsamplingNearest2d(scale_factor=2)
         self.last_conv = nn.Conv2d(64,3,3,padding=1,bias=False)
+        self.tanh = nn.Tanh()
 
     def forward(self, input):
         x = self.linear(input).view(-1,512,4,4)
@@ -92,7 +93,8 @@ class Generator(nn.Module):
         for i in range(3):
             x = self.up_blocks[i](x)
         x = self.up(x)
-        return self.last_conv(x)
+        x = self.last_conv(x)
+        return self.tanh(x)
 
 class UpBlock(nn.Module):
     def __init__(self,in_channels: int, out_channels: int, kernel_size= 3,padding=1,bias=False):
