@@ -84,8 +84,9 @@ class Generator(nn.Module):
         self.bn = nn.BatchNorm2d(64 * 8)
         self.relu = nn.LeakyReLU(0.2,True)
         self.up_blocks = [UpBlock(64 * 2**i,64 * 2**(i-1)).to(device) for i in range(3,0,-1)]
-        self.up = nn.UpsamplingNearest2d(scale_factor=2)
-        self.last_conv = nn.Conv2d(64,3,3,padding=1,bias=False)
+        # self.up = nn.UpsamplingNearest2d(scale_factor=2)
+        # self.last_conv = nn.Conv2d(64,3,3,padding=1,bias=False)
+        self.last_conv = nn.ConvTranspose2d(64, 3, 4,2,padding=1,bias=False)
         self.tanh = nn.Tanh()
 
     def forward(self, input):
@@ -94,16 +95,17 @@ class Generator(nn.Module):
         x = self.relu(x)
         for i in range(3):
             x = self.up_blocks[i](x)
-        x = self.up(x)
+        # x = self.up(x)
         x = self.last_conv(x)
         return self.tanh(x)
 
 class UpBlock(nn.Module):
-    def __init__(self,in_channels: int, out_channels: int, kernel_size= 3,padding=1,bias=False):
+    def __init__(self,in_channels: int, out_channels: int, kernel_size= 4,padding=1,bias=False):
         super().__init__()
         self.block = nn.Sequential(
-            nn.UpsamplingNearest2d(scale_factor=2),
-            nn.Conv2d(in_channels, out_channels, kernel_size,padding=padding,bias=bias),
+            # nn.UpsamplingNearest2d(scale_factor=2),
+            # nn.Conv2d(in_channels, out_channels, kernel_size,padding=padding,bias=bias),
+            nn.ConvTranspose2d(in_channels, out_channels, kernel_size,2,padding=padding,bias=bias),
             nn.BatchNorm2d(out_channels),
             nn.LeakyReLU(0.2,True),
         )
