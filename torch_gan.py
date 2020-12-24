@@ -3,6 +3,7 @@ import torch
 from torch import nn,optim
 from tqdm import trange
 from torchvision import transforms
+import torchvision
 import numpy as np
 import wandb
 
@@ -70,8 +71,9 @@ def train(data,epochs):
 
         if epoch % 300 == 0:
             with torch.no_grad():
-                generated = netG(fixed_input)*127.5 + 127.5
-            wandb.log({"images/generated":[wandb.Image(generated[i].numpy().astype(np.uint8)) for i in range(generated.size(0))]})
+                generated = netG(fixed_input).detach().cpu()
+            # wandb.log({"images/generated":[wandb.Image(transforms.ToPILImage()(generated[i])) for i in range(generated.size(0))]})
+            wandb.log({"images/generated":wandb.Image(transforms.ToPILImage()(torchvision.utils.make_grid(generated,nrow=5,normalize=True)))})
             gc.collect()
 
 
