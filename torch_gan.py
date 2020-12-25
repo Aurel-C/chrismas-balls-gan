@@ -6,7 +6,7 @@ from torchvision import transforms
 import torchvision
 import numpy as np
 import wandb
-
+from PIL import Image
 
 
 def train(data,epochs):
@@ -16,10 +16,11 @@ def train(data,epochs):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     preprocess = transforms.Compose([
-        transforms.RandomRotation(45),
+        transforms.RandomRotation(5),
         transforms.RandomCrop(64),
-        transforms.RandomVerticalFlip(),
-        transforms.Normalize([127.5,127.5,127.5],[127.5,127.5,127.5]),
+        transforms.RandomHorizontalFlip(),
+        # transforms.Normalize([127.5,127.5,127.5],[127.5,127.5,127.5]),
+        transforms.Normalize([193,172,167],[71.1,86.3,88.3]),
     ])
     netG = Generator().to(device)
     netD = Discriminator().to(device)
@@ -72,8 +73,10 @@ def train(data,epochs):
 
         if epoch % 300 == 0:
             with torch.no_grad():
-                generated = (netG(fixed_input).detach().permute(0,2,3,1) * 127.5 + 127.5).cpu().type(torch.uint8)
-            wandb.log({"images/generated":[wandb.Image(generated[i].numpy()) for i in range(generated.size(0))]})
+            #     generated = (netG(fixed_input).detach().permute(0,2,3,1) * 127.5 + 127.5).cpu().type(torch.uint8)
+                generated = netG(fixed_input).detach().cpu()
+            # wandb.log({"images/generated":[wandb.Image(generated[i].numpy()) for i in range(generated.size(0))]})
+            wandb.log({"images/generated":[wandb.Image(generated[i]) for i in range(generated.size(0))]})
             gc.collect()
 
 
@@ -86,7 +89,7 @@ class Generator(nn.Module):
         self.up_blocks = nn.ModuleList([UpBlock(64 * 2**i,64 * 2**(i-1)) for i in range(3,0,-1)])
         self.up = nn.UpsamplingNearest2d(scale_factor=2)
         self.last_conv = nn.Conv2d(64,3,3,padding=1,bias=False)
-        self.tanh = nn.Tanh()
+        # self.tanh = nn.Tanh()
 
     def forward(self, input):
         x = self.linear(input).view(-1,512,4,4)
@@ -96,7 +99,8 @@ class Generator(nn.Module):
             x = self.up_blocks[i](x)
         x = self.up(x)
         x = self.last_conv(x)
-        return self.tanh(x)
+        # x = self.tanh(x)
+        return x
 
 class UpBlock(nn.Module):
     def __init__(self,in_channels: int, out_channels: int, kernel_size= 3,padding=1,bias=False):
