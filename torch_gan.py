@@ -3,7 +3,6 @@ import torch
 from torch import nn,optim
 from tqdm import trange
 from torchvision import transforms
-from PIL import Image
 import torchvision
 import numpy as np
 import wandb
@@ -16,11 +15,10 @@ def train(data,epochs):
     n_batches = len(dataloader)
     
     preprocess = transforms.Compose([
-        # transforms.RandomRotation(45),
+        transforms.RandomRotation(45),
         transforms.RandomCrop(64),
         transforms.RandomVerticalFlip(),
-        # transforms.Normalize([127.5,127.5,127.5],[127.5,127.5,127.5]),
-        transforms.Normalize([193,172,167],[71.1,86.3,88.3]),
+        transforms.Normalize([127.5,127.5,127.5],[127.5,127.5,127.5]),
     ])
     netG = Generator().to(device)
     netD = Discriminator().to(device)
@@ -32,17 +30,16 @@ def train(data,epochs):
         "g_loss":0,
         "d_loss":0,
     }
-    fixed_input = torch.randn(25,100,1,1,device=device).detach()
+    fixed_input = torch.randn(25,128,device=device).detach()
 
     for epoch in trange(epochs+1):
         for data in dataloader:
             data = preprocess(data.to(device))
             g_labels = torch.ones(data.size(0),device=device)
             fake_labels = torch.zeros(data.size(0),device=device)
-            # true_labels = 1 - 0.15*torch.rand(data.size(0),device=device)
-            true_labels = torch.ones(data.size(0),device=device)
+            true_labels = 1 - 0.15*torch.rand(data.size(0),device=device)
 
-            inputs = torch.randn(data.size(0),100,1,1,device=device)
+            inputs = torch.randn(data.size(0),128,device=device)
             generated = netG(inputs)
 
             optimizerD.zero_grad()
@@ -74,45 +71,38 @@ def train(data,epochs):
 
         if epoch % 300 == 0:
             with torch.no_grad():
-                generated = netG(fixed_input).detach()
-                # generated = (netG(fixed_input).detach().permute(0,2,3,1) * 127.5 + 127.5).cpu().type(torch.uint8)
-            # wandb.log({"images/generated":[wandb.Image(Image.fromarray(generated[i].numpy())) for i in range(generated.size(0))]})
-            wandb.log({"images/generated":[wandb.Image(generated[i]) for i in range(generated.size(0))]})
+                generated = (netG(fixed_input).detach().permute(0,2,3,1) * 127.5 + 127.5).cpu().type(torch.uint8)
+            wandb.log({"images/generated":[wandb.Image(generated[i].numpy()) for i in range(generated.size(0))]})
             gc.collect()
 
 
 class Generator(nn.Module):
     def __init__(self):
         super(Generator, self).__init__()
-        # self.linear = nn.Linear(100,64*8*4*4,bias=False)
-        self.trans = nn.ConvTranspose2d( 100, 64 * 8, 4, 1, 0, bias=False)
+        self.linear = nn.Linear(128,64*8*4*4,bias=False)
         self.bn = nn.BatchNorm2d(64 * 8)
         self.relu = nn.LeakyReLU(0.2,True)
         self.up_blocks = [UpBlock(64 * 2**i,64 * 2**(i-1)).to(device) for i in range(3,0,-1)]
-        # self.up = nn.UpsamplingNearest2d(scale_factor=2)
-        # self.last_conv = nn.Conv2d(64,3,3,padding=1,bias=False)
-        self.last_conv = nn.ConvTranspose2d(64, 3, 4,2,padding=1,bias=False)
-        # self.tanh = nn.Tanh()
+        self.up = nn.UpsamplingNearest2d(scale_factor=2)
+        self.last_conv = nn.Conv2d(64,3,3,padding=1,bias=False)
+        self.tanh = nn.Tanh()
 
     def forward(self, input):
-        # x = self.linear(input).view(-1,512,4,4)
-        x = self.trans(input)
+        x = self.linear(input).view(-1,512,4,4)
         x = self.bn(x)
         x = self.relu(x)
         for i in range(3):
             x = self.up_blocks[i](x)
-        # x = self.up(x)
+        x = self.up(x)
         x = self.last_conv(x)
-        # x = self.tanh(x)
-        return x
+        return self.tanh(x)
 
 class UpBlock(nn.Module):
-    def __init__(self,in_channels: int, out_channels: int, kernel_size= 4,padding=1,bias=False):
+    def __init__(self,in_channels: int, out_channels: int, kernel_size= 3,padding=1,bias=False):
         super().__init__()
         self.block = nn.Sequential(
-            # nn.UpsamplingNearest2d(scale_factor=2),
-            # nn.Conv2d(in_channels, out_channels, kernel_size,padding=padding,bias=bias),
-            nn.ConvTranspose2d(in_channels, out_channels, kernel_size,2,padding=padding,bias=bias),
+            nn.UpsamplingNearest2d(scale_factor=2),
+            nn.Conv2d(in_channels, out_channels, kernel_size,padding=padding,bias=bias),
             nn.BatchNorm2d(out_channels),
             nn.LeakyReLU(0.2,True),
         )
@@ -146,5 +136,5 @@ class Discriminator(nn.Module):
         return self.main(input)
 
 if __name__ == "__main__":
-    inp = torch.zeros(2,100,1,1)
+    inp = torch.zeros(2,128)
     print(Generator().forward(inp).size())
