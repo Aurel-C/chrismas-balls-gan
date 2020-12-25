@@ -32,7 +32,7 @@ def train(data,epochs):
         "g_loss":0,
         "d_loss":0,
     }
-    fixed_input = torch.randn(25,128,device=device).detach()
+    fixed_input = torch.randn(25,100,device=device).detach()
 
     for epoch in trange(epochs+1):
         for data in dataloader:
@@ -41,8 +41,8 @@ def train(data,epochs):
             fake_labels = torch.zeros(data.size(0),device=device)
             # true_labels = 1 - 0.15*torch.rand(data.size(0),device=device)
             true_labels = torch.ones(data.size(0),device=device)
-            
-            inputs = torch.randn(data.size(0),128,device=device)
+
+            inputs = torch.randn(data.size(0),100,device=device)
             generated = netG(inputs)
 
             optimizerD.zero_grad()
@@ -84,7 +84,7 @@ def train(data,epochs):
 class Generator(nn.Module):
     def __init__(self):
         super(Generator, self).__init__()
-        self.linear = nn.Linear(128,64*8*4*4,bias=False)
+        self.linear = nn.Linear(100,64*8*4*4,bias=False)
         self.bn = nn.BatchNorm2d(64 * 8)
         self.relu = nn.LeakyReLU(0.2,True)
         self.up_blocks = [UpBlock(64 * 2**i,64 * 2**(i-1)).to(device) for i in range(3,0,-1)]
@@ -144,5 +144,5 @@ class Discriminator(nn.Module):
         return self.main(input)
 
 if __name__ == "__main__":
-    inp = torch.zeros(2,128)
+    inp = torch.zeros(2,100)
     print(Generator().forward(inp).size())
