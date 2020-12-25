@@ -16,7 +16,7 @@ def train(data,epochs):
     n_batches = len(dataloader)
     
     preprocess = transforms.Compose([
-        transforms.RandomRotation(45),
+        # transforms.RandomRotation(45),
         transforms.RandomCrop(64),
         transforms.RandomVerticalFlip(),
         # transforms.Normalize([127.5,127.5,127.5],[127.5,127.5,127.5]),
