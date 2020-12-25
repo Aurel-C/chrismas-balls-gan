@@ -7,13 +7,14 @@ import torchvision
 import numpy as np
 import wandb
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 
 def train(data,epochs):
     data = np.transpose(data,[0,3,1,2]).astype(np.float32)
     dataloader = torch.utils.data.DataLoader(data,batch_size=32,shuffle=True,drop_last=True,pin_memory=True)
     n_batches = len(dataloader)
-    
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
     preprocess = transforms.Compose([
         transforms.RandomRotation(45),
         transforms.RandomCrop(64),
@@ -82,7 +83,7 @@ class Generator(nn.Module):
         self.linear = nn.Linear(128,64*8*4*4,bias=False)
         self.bn = nn.BatchNorm2d(64 * 8)
         self.relu = nn.LeakyReLU(0.2,True)
-        self.up_blocks = [UpBlock(64 * 2**i,64 * 2**(i-1)).to(device) for i in range(3,0,-1)]
+        self.up_blocks = nn.ModuleList([UpBlock(64 * 2**i,64 * 2**(i-1)) for i in range(3,0,-1)])
         self.up = nn.UpsamplingNearest2d(scale_factor=2)
         self.last_conv = nn.Conv2d(64,3,3,padding=1,bias=False)
         self.tanh = nn.Tanh()
@@ -137,4 +138,6 @@ class Discriminator(nn.Module):
 
 if __name__ == "__main__":
     inp = torch.zeros(2,128)
-    print(Generator().forward(inp).size())
+    G = Generator()
+    print(G)
+    print(G.forward(inp).size())
