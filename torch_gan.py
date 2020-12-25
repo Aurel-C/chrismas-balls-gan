@@ -39,8 +39,9 @@ def train(data,epochs):
             data = preprocess(data.to(device))
             g_labels = torch.ones(data.size(0),device=device)
             fake_labels = torch.zeros(data.size(0),device=device)
-            true_labels = 1 - 0.15*torch.rand(data.size(0),device=device)
-
+            # true_labels = 1 - 0.15*torch.rand(data.size(0),device=device)
+            true_labels = torch.ones(data.size(0),device=device)
+            
             inputs = torch.randn(data.size(0),128,device=device)
             generated = netG(inputs)
 
