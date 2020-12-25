@@ -73,8 +73,10 @@ def train(data,epochs):
 
         if epoch % 300 == 0:
             with torch.no_grad():
-                generated = (netG(fixed_input).detach().permute(0,2,3,1) * 127.5 + 127.5).cpu().type(torch.uint8)
-            wandb.log({"images/generated":[wandb.Image(Image.fromarray(generated[i].numpy())) for i in range(generated.size(0))]})
+                generated = netG(fixed_input).detach()
+                # generated = (netG(fixed_input).detach().permute(0,2,3,1) * 127.5 + 127.5).cpu().type(torch.uint8)
+            # wandb.log({"images/generated":[wandb.Image(Image.fromarray(generated[i].numpy())) for i in range(generated.size(0))]})
+            wandb.log({"images/generated":[wandb.Image(generated[i]) for i in range(generated.size(0))]})
             gc.collect()
 
 
