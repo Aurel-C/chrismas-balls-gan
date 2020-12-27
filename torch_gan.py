@@ -9,9 +9,9 @@ from torch import nn,optim
 from torchvision import transforms
 
 
-def train(data,epochs):
+def train(data,epochs,batch_size):
     data = np.transpose(data,[0,3,1,2]).astype(np.float32)
-    dataloader = torch.utils.data.DataLoader(data,batch_size=32,shuffle=True,drop_last=True,pin_memory=True)
+    dataloader = torch.utils.data.DataLoader(data,batch_size=batch_size,shuffle=True,drop_last=True,pin_memory=True)
     n_batches = len(dataloader)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
