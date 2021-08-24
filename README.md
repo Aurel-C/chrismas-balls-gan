@@ -1,2 +1,2 @@
-# DCGAN for Christmas balls 
-The implementation is in pytorch and tensorflow.
+# Variations of DCGAN for Christmas balls 
+There are two implementations in pytorch and tensorflow but they do not represent the same model.
